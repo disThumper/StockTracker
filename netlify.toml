@@ -15,6 +15,13 @@
   # Directory for Netlify Functions
   directory = "netlify/functions"
 
+# Force HTTPS redirect
+[[redirects]]
+  from = "http://*"
+  to = "https://:splat"
+  status = 301
+  force = true
+
 # Redirect all requests to index.html for client-side routing
 # EXCEPT for API function calls (/.netlify/functions/*)
 [[redirects]]
@@ -32,6 +39,10 @@
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    # Content Security Policy - allows inline styles temporarily (will be removed when we move styles to CSS file)
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://*.netlify.app; img-src 'self' data: https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+    # Strict Transport Security - force HTTPS for 1 year
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
 
 # Cache static assets
 [[headers]]

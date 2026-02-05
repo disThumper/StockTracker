@@ -33,6 +33,7 @@ import {
   RefreshCw,
   BarChart
 } from './components/Icons';
+import './App.css';
 
 const InvestmentTracker: React.FC = () => {
   const [portfolio, setPortfolio] = useState<Stock[]>([]);
@@ -597,11 +598,34 @@ const InvestmentTracker: React.FC = () => {
   const addStock = async () => {
     if (newStock.symbol && newStock.shares && newStock.avgPrice) {
       try {
+        // Validate stock symbol (1-5 uppercase letters only)
+        const symbolRegex = /^[A-Z]{1,5}$/;
+        const symbolUpper = newStock.symbol.toUpperCase().trim();
+
+        if (!symbolRegex.test(symbolUpper)) {
+          alert('Invalid stock symbol. Please use 1-5 uppercase letters (e.g., AAPL, MSFT).');
+          return;
+        }
+
+        // Validate shares (positive number, max 10 decimal places)
+        const shares = parseFloat(newStock.shares);
+        if (isNaN(shares) || shares <= 0 || shares > 1000000000) {
+          alert('Invalid number of shares. Please enter a positive number.');
+          return;
+        }
+
+        // Validate average price (positive number, max 2 decimal places for currency)
+        const avgPrice = parseFloat(newStock.avgPrice);
+        if (isNaN(avgPrice) || avgPrice <= 0 || avgPrice > 1000000) {
+          alert('Invalid price. Please enter a positive number.');
+          return;
+        }
+
         // Fetch company name from Polygon Ticker Details API
-        let companyName = newStock.symbol.toUpperCase();
+        let companyName = symbolUpper;
         try {
           const tickerData = await fetchFromPolygon(
-            `/v3/reference/tickers/${newStock.symbol.toUpperCase()}`
+            `/v3/reference/tickers/${symbolUpper}`
           );
           if (tickerData && tickerData.results && tickerData.results.name) {
             companyName = tickerData.results.name;
@@ -615,9 +639,9 @@ const InvestmentTracker: React.FC = () => {
           .from('portfolios')
           .insert([{
             user_id: user!.id,
-            symbol: newStock.symbol.toUpperCase(),
-            shares: parseFloat(newStock.shares),
-            avg_price: parseFloat(newStock.avgPrice),
+            symbol: symbolUpper,
+            shares: shares,
+            avg_price: avgPrice,
             name: companyName
           }])
           .select();
@@ -628,7 +652,7 @@ const InvestmentTracker: React.FC = () => {
         setNewStock({ symbol: '', shares: '', avgPrice: '' });
       } catch (error) {
         console.error('Error adding stock:', error);
-        alert('Error adding stock: ' + (error as Error).message);
+        alert('Failed to add stock. Please try again.');
       }
     }
   };
@@ -669,12 +693,29 @@ const InvestmentTracker: React.FC = () => {
   const saveEdit = async () => {
     if (editForm.shares && editForm.avgPrice) {
       try {
+        // Validate shares (positive number)
+        const shares = parseFloat(editForm.shares);
+        if (isNaN(shares) || shares <= 0 || shares > 1000000000) {
+          alert('Invalid number of shares. Please enter a positive number.');
+          return;
+        }
+
+        // Validate average price (positive number)
+        const avgPrice = parseFloat(editForm.avgPrice);
+        if (isNaN(avgPrice) || avgPrice <= 0 || avgPrice > 1000000) {
+          alert('Invalid price. Please enter a positive number.');
+          return;
+        }
+
+        // Sanitize company name (max 100 characters, basic text only)
+        const sanitizedName = (editForm.name || editForm.symbol).trim().slice(0, 100);
+
         const { error } = await supabase
           .from('portfolios')
           .update({
-            shares: parseFloat(editForm.shares),
-            avg_price: parseFloat(editForm.avgPrice),
-            name: editForm.name || editForm.symbol,
+            shares: shares,
+            avg_price: avgPrice,
+            name: sanitizedName,
             updated_at: new Date().toISOString()
           })
           .eq('id', editForm.id)
@@ -686,7 +727,7 @@ const InvestmentTracker: React.FC = () => {
         cancelEdit();
       } catch (error) {
         console.error('Error updating stock:', error);
-        alert('Error updating stock: ' + (error as Error).message);
+        alert('Failed to update stock. Please try again.');
       }
     }
   };
@@ -1003,16 +1044,6 @@ const InvestmentTracker: React.FC = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex items-center justify-center p-6">
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
-          * { font-family: 'IBM Plex Mono', monospace; }
-          .glass {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(148, 163, 184, 0.1);
-          }
-        `}</style>
-
         <div className="glass rounded-xl p-8 max-w-md w-full">
           <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent text-center">
             PORTFOLIO TRACKER
@@ -1062,56 +1093,6 @@ const InvestmentTracker: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 p-6">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
-
-        * {
-          font-family: 'IBM Plex Mono', monospace;
-        }
-
-        .glass {
-          background: rgba(15, 23, 42, 0.6);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(148, 163, 184, 0.1);
-        }
-
-        .glow {
-          box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
-        }
-
-        .number-glow {
-          text-shadow: 0 0 20px currentColor;
-        }
-
-        .animate-pulse-slow {
-          animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .slide-in {
-          animation: slideIn 0.3s ease-out;
-        }
-
-        .metric-card {
-          transition: all 0.3s ease;
-        }
-
-        .metric-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
-        }
-      `}</style>
-
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex items-start justify-between">

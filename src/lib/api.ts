@@ -20,9 +20,3 @@ export async function fetchFromPolygon(endpoint: string): Promise<any> {
     throw error;
   }
 }
-
-// Legacy export for backward compatibility during migration
-// TODO: Remove this once all code is updated to use fetchFromPolygon
-const POLYGON_API_KEY = import.meta.env.VITE_POLYGON_API_KEY || '';
-
-export { POLYGON_API_KEY };
