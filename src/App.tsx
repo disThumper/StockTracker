@@ -105,12 +105,11 @@ const InvestmentTracker: React.FC = () => {
                 `/v3/reference/tickers/${stock.symbol}`
               );
               if (tickerData && tickerData.results && tickerData.results.name) {
-                  await supabase
-                    .from('portfolios')
-                    .update({ name: tickerData.results.name })
-                    .eq('id', stock.id);
-                  stock.name = tickerData.results.name; // Update local copy
-                }
+                await supabase
+                  .from('portfolios')
+                  .update({ name: tickerData.results.name })
+                  .eq('id', stock.id);
+                stock.name = tickerData.results.name; // Update local copy
               }
             } catch (err) {
               console.error(`Error updating name for ${stock.symbol}:`, err);
@@ -325,7 +324,6 @@ const InvestmentTracker: React.FC = () => {
                 const totalVolume = aggResult.results.reduce((sum: number, r: any) => sum + r.v, 0);
                 avgVolume = Math.round(totalVolume / aggResult.results.length);
               }
-            }
           } catch (error) {
             console.error(`Error fetching 52-week data for ${symbol}:`, error);
           }
@@ -386,7 +384,6 @@ const InvestmentTracker: React.FC = () => {
                   }
                 }
               }
-            }
           } catch (error) {
             console.error(`Error fetching financials for ${symbol}:`, error);
           }
@@ -915,7 +912,6 @@ const InvestmentTracker: React.FC = () => {
           setChartData(allData);
           setChartDisplayDate(displayFrom.toISOString().split('T')[0]);
         }
-      }
       setChartLoading(false);
     } catch (error) {
       console.error('Error fetching chart data:', error);
