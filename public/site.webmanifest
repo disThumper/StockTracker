@@ -1,0 +1,21 @@
+{
+  "name": "Portfolio Commander",
+  "short_name": "Portfolio",
+  "description": "Track and manage your stock portfolio with real-time market data",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#0f2847",
+  "background_color": "#0a1a30",
+  "display": "standalone",
+  "start_url": "/"
+}

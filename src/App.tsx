@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { fetchFromPolygon } from './lib/api';
 import type { User } from '@supabase/supabase-js';
+import { Logo } from './components/Logo';
 import { createChart } from 'lightweight-charts';
 import type {
   Stock,
@@ -31,7 +32,9 @@ import {
   LogOut,
   Filter,
   RefreshCw,
-  BarChart
+  BarChart,
+  Menu,
+  Settings
 } from './components/Icons';
 import './App.css';
 
@@ -57,11 +60,27 @@ const InvestmentTracker: React.FC = () => {
   const [chartDisplayDate, setChartDisplayDate] = useState<string | null>(null);
   const [chartLoading, setChartLoading] = useState(false);
   const [marketIndexes, setMarketIndexes] = useState<MarketIndex[]>([]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Check for existing session
   useEffect(() => {
     checkUser();
   }, []);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mobileMenuOpen) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.mobile-menu') && !target.closest('.mobile-menu-button')) {
+          setMobileMenuOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [mobileMenuOpen]);
 
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -1058,8 +1077,11 @@ const InvestmentTracker: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex items-center justify-center p-6">
         <div className="glass rounded-xl p-8 max-w-md w-full">
+          <div className="flex justify-center mb-6">
+            <Logo size={120} />
+          </div>
           <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent text-center">
-            PORTFOLIO TRACKER
+            PORTFOLIO COMMANDER
           </h1>
           <p className="text-slate-400 text-sm text-center mb-6">Sign in to manage your investments</p>
 
@@ -1105,45 +1127,96 @@ const InvestmentTracker: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-5xl font-bold mb-2 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                PORTFOLIO COMMANDER
-              </h1>
-              <p className="text-slate-400 text-sm font-mono">Real-time tracking & AI-powered recommendations</p>
-              <div className="flex items-center gap-4 mt-1">
-                <p className="text-slate-500 text-xs font-mono">☁️ Synced with Supabase • {user.email}</p>
-                {lastRefresh && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 text-xs font-mono">
-                      Last refresh: {lastRefresh.toLocaleTimeString()}
-                    </span>
-                    <button
-                      onClick={handleManualRefresh}
-                      disabled={loading}
-                      className="p-1 hover:bg-blue-500/20 rounded transition-colors text-slate-400 hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Refresh data"
-                    >
-                      <RefreshCw />
-                    </button>
-                  </div>
-                )}
+        {/* Header */}
+        <div className="mb-8 p-4 md:p-6 relative">
+          <div className="flex items-center justify-between">
+            {/* Logo and Title */}
+            <div className="flex items-center gap-3">
+              <Logo size={60} />
+              <div>
+                <h1 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent leading-tight">
+                  PORTFOLIO COMMANDER
+                </h1>
+                <p className="text-slate-500 text-[10px] md:text-xs font-mono leading-tight">
+                  Real-time tracking &<br className="md:hidden" /> AI-powered recommendations
+                </p>
               </div>
             </div>
+
+            {/* Desktop: Sign Out button */}
             <button
               onClick={handleSignOut}
-              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-mono transition-colors flex items-center gap-2"
+              className="hidden md:flex px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-mono transition-colors items-center gap-2"
             >
               <LogOut />
               Sign Out
             </button>
+
+            {/* Mobile: Hamburger Menu */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="mobile-menu-button md:hidden p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-300"
+            >
+              <Menu />
+            </button>
+          </div>
+
+          {/* Mobile Menu Dropdown */}
+          {mobileMenuOpen && (
+            <div className="mobile-menu md:hidden absolute right-4 top-20 z-50 w-64 glass rounded-lg shadow-lg border border-slate-700 overflow-hidden">
+              <div className="p-3 bg-slate-800/50 border-b border-slate-700">
+                <div className="text-slate-400 text-xs font-mono truncate">
+                  {user.email}
+                </div>
+              </div>
+              <div className="p-2">
+                <button
+                  disabled
+                  className="w-full flex items-center gap-3 px-4 py-3 text-slate-500 rounded-lg text-sm font-mono cursor-not-allowed opacity-50"
+                >
+                  <Settings />
+                  Settings
+                  <span className="ml-auto text-xs text-slate-600">(Coming Soon)</span>
+                </button>
+                <button
+                  onClick={() => {
+                    handleSignOut();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 text-slate-300 rounded-lg text-sm font-mono transition-colors"
+                >
+                  <LogOut />
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Status Info */}
+          <div className="mt-4 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+            <p className="text-slate-500 text-xs font-mono">☁️ Synced with Supabase</p>
+            {lastRefresh && (
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500 text-xs font-mono">
+                  Last refresh: {lastRefresh.toLocaleTimeString()}
+                </span>
+                <button
+                  onClick={handleManualRefresh}
+                  disabled={loading}
+                  className="p-1 hover:bg-blue-500/20 rounded transition-colors text-slate-400 hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Refresh data"
+                >
+                  <RefreshCw />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Market Indexes */}
+        <div className="px-4 md:px-6">
         {marketIndexes.length > 0 && (
           <div className="glass rounded-xl p-6 mb-8">
             <h3 className="text-sm text-slate-400 uppercase tracking-wider mb-4 font-mono">Market Indexes</h3>
@@ -1809,6 +1882,7 @@ const InvestmentTracker: React.FC = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
