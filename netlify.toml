@@ -11,11 +11,17 @@
   # Use Node.js 18.x for the build
   NODE_VERSION = "18"
 
+[functions]
+  # Directory for Netlify Functions
+  directory = "netlify/functions"
+
 # Redirect all requests to index.html for client-side routing
+# EXCEPT for API function calls (/.netlify/functions/*)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false  # Don't override existing files or functions
 
 # Security headers
 [[headers]]

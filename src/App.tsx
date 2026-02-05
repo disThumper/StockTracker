@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
-import { POLYGON_API_KEY } from './lib/api';
+import { fetchFromPolygon } from './lib/api';
 import type { User } from '@supabase/supabase-js';
 import { createChart } from 'lightweight-charts';
 import type {
@@ -100,12 +100,10 @@ const InvestmentTracker: React.FC = () => {
         if (stocksToUpdate.length > 0) {
           for (const stock of stocksToUpdate) {
             try {
-              const tickerResponse = await fetch(
-                `https://api.polygon.io/v3/reference/tickers/${stock.symbol}?apiKey=${POLYGON_API_KEY}`
+              const tickerData = await fetchFromPolygon(
+                `/v3/reference/tickers/${stock.symbol}`
               );
-              if (tickerResponse.ok) {
-                const tickerData = await tickerResponse.json();
-                if (tickerData.results && tickerData.results.name) {
+              if (tickerData && tickerData.results && tickerData.results.name) {
                   await supabase
                     .from('portfolios')
                     .update({ name: tickerData.results.name })
@@ -147,12 +145,11 @@ const InvestmentTracker: React.FC = () => {
 
       const symbolsString = indexes.map(i => i.symbol).join(',');
 
-      const response = await fetch(
-        `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${symbolsString}&apiKey=${POLYGON_API_KEY}`
+      const result = await fetchFromPolygon(
+        `/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${symbolsString}`
       );
 
-      if (response.ok) {
-        const result = await response.json();
+      if (result) {
         const indexData: MarketIndex[] = [];
 
         if (result.tickers && Array.isArray(result.tickers)) {
@@ -228,15 +225,20 @@ const InvestmentTracker: React.FC = () => {
       }
 
       // Fetch current snapshot
-      const response = await fetch(
-        `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${symbols}&apiKey=${POLYGON_API_KEY}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
+      let result;
+      let rateLimited = false;
+
+      try {
+        result = await fetchFromPolygon(
+          `/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${symbols}`
+        );
+      } catch (error: any) {
+        if (error.message?.includes('429') || error.message?.includes('Rate limit')) {
+          rateLimited = true;
+        } else {
+          throw error;
         }
-      );
+      }
 
       // Calculate dates for 52-week range (1 year ago)
       const today = new Date();
@@ -245,7 +247,7 @@ const InvestmentTracker: React.FC = () => {
       const toDate = today.toISOString().split('T')[0];
       const fromDate = oneYearAgo.toISOString().split('T')[0];
 
-      if (response.status === 429) {
+      if (rateLimited) {
         console.error('Rate limited - please wait before refreshing');
         portfolio.forEach(stock => {
           data[stock.symbol] = {
@@ -266,11 +268,9 @@ const InvestmentTracker: React.FC = () => {
         return;
       }
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+      if (!result) {
+        throw new Error('API error: No data received');
       }
-
-      const result = await response.json();
 
       if (result.tickers && Array.isArray(result.tickers)) {
         // First pass: collect basic data from snapshot
@@ -311,13 +311,11 @@ const InvestmentTracker: React.FC = () => {
           let historicalPrices: any[] = [];
 
           try {
-            const aggResponse = await fetch(
-              `https://api.polygon.io/v2/aggs/ticker/${symbol}/range/1/day/${fromDate}/${toDate}?apiKey=${POLYGON_API_KEY}`
+            const aggResult = await fetchFromPolygon(
+              `/v2/aggs/ticker/${symbol}/range/1/day/${fromDate}/${toDate}`
             );
 
-            if (aggResponse.ok) {
-              const aggResult = await aggResponse.json();
-              if (aggResult.results && aggResult.results.length > 0) {
+            if (aggResult && aggResult.results && aggResult.results.length > 0) {
                 historicalPrices = aggResult.results;
                 // Calculate 52-week high/low from historical data
                 week52High = Math.max(...aggResult.results.map((r: any) => r.h));
@@ -341,13 +339,11 @@ const InvestmentTracker: React.FC = () => {
           };
 
           try {
-            const financialsResponse = await fetch(
-              `https://api.polygon.io/vX/reference/financials?ticker=${symbol}&limit=5&apiKey=${POLYGON_API_KEY}`
+            const financialsResult = await fetchFromPolygon(
+              `/vX/reference/financials?ticker=${symbol}&limit=5`
             );
 
-            if (financialsResponse.ok) {
-              const financialsResult = await financialsResponse.json();
-              if (financialsResult.results && financialsResult.results.length > 0) {
+            if (financialsResult && financialsResult.results && financialsResult.results.length > 0) {
                 const latest = financialsResult.results[0];
                 const incomeStatement = latest.financials?.income_statement;
 
@@ -604,14 +600,11 @@ const InvestmentTracker: React.FC = () => {
         // Fetch company name from Polygon Ticker Details API
         let companyName = newStock.symbol.toUpperCase();
         try {
-          const tickerResponse = await fetch(
-            `https://api.polygon.io/v3/reference/tickers/${newStock.symbol.toUpperCase()}?apiKey=${POLYGON_API_KEY}`
+          const tickerData = await fetchFromPolygon(
+            `/v3/reference/tickers/${newStock.symbol.toUpperCase()}`
           );
-          if (tickerResponse.ok) {
-            const tickerData = await tickerResponse.json();
-            if (tickerData.results && tickerData.results.name) {
-              companyName = tickerData.results.name;
-            }
+          if (tickerData && tickerData.results && tickerData.results.name) {
+            companyName = tickerData.results.name;
           }
         } catch (err) {
           console.error('Error fetching company name:', err);
@@ -863,13 +856,11 @@ const InvestmentTracker: React.FC = () => {
       const fromDate = from.toISOString().split('T')[0];
       const toDate = to.toISOString().split('T')[0];
 
-      const response = await fetch(
-        `https://api.polygon.io/v2/aggs/ticker/${symbol}/range/1/day/${fromDate}/${toDate}?adjusted=true&sort=asc&apiKey=${POLYGON_API_KEY}`
+      const result = await fetchFromPolygon(
+        `/v2/aggs/ticker/${symbol}/range/1/day/${fromDate}/${toDate}?adjusted=true&sort=asc`
       );
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.results && result.results.length > 0) {
+      if (result && result.results && result.results.length > 0) {
           const allData = result.results.map((bar: any) => ({
             time: new Date(bar.t).toISOString().split('T')[0],
             open: bar.o,
