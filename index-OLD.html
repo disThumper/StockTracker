@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Investment Tracker</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Storage API Mock for Chrome Extension -->
+  <script>
+    // Mock storage API if not running in extension context
+    if (!window.storage) {
+      window.storage = {
+        get: async (key) => {
+          const value = localStorage.getItem(key);
+          return value ? { value } : null;
+        },
+        set: async (key, value) => {
+          localStorage.setItem(key, value);
+        },
+        delete: async (key) => {
+          localStorage.removeItem(key);
+        }
+      };
+    }
+  </script>
+
+  <!-- Load and render the React component -->
+  <script type="text/babel" src="investment-tracker_2.jsx"></script>
+  <script type="text/babel">
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<InvestmentTracker />);
+  </script>
+</body>
+</html>
