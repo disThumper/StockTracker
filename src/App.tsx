@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
-import { fetchFromPolygon } from './lib/api';
+import { fetchFromPolygon, fetchFromCoinGecko } from './lib/api';
 import type { User } from '@supabase/supabase-js';
 import { Logo } from './components/Logo';
 import { createChart } from 'lightweight-charts';
@@ -168,34 +168,54 @@ const InvestmentTracker: React.FC = () => {
 
       const symbolsString = indexes.map(i => i.symbol).join(',');
 
-      const result = await fetchFromPolygon(
-        `/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${symbolsString}`
-      );
+      // Fetch stock indexes and Bitcoin in parallel
+      const [stockResult, bitcoinResult] = await Promise.all([
+        fetchFromPolygon(
+          `/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${symbolsString}`
+        ),
+        fetchFromCoinGecko(
+          '/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true'
+        )
+      ]);
 
-      if (result) {
-        const indexData: MarketIndex[] = [];
+      const indexData: MarketIndex[] = [];
 
-        if (result.tickers && Array.isArray(result.tickers)) {
-          result.tickers.forEach((ticker: any) => {
-            const indexInfo = indexes.find(i => i.symbol === ticker.ticker);
-            if (indexInfo) {
-              const currentPrice = ticker.lastTrade?.p || ticker.day?.c || ticker.prevDay?.c || 0;
-              const change = ticker.todaysChange || 0;
-              const changePercent = ticker.todaysChangePerc || 0;
+      // Process stock indexes
+      if (stockResult && stockResult.tickers && Array.isArray(stockResult.tickers)) {
+        stockResult.tickers.forEach((ticker: any) => {
+          const indexInfo = indexes.find(i => i.symbol === ticker.ticker);
+          if (indexInfo) {
+            const currentPrice = ticker.lastTrade?.p || ticker.day?.c || ticker.prevDay?.c || 0;
+            const change = ticker.todaysChange || 0;
+            const changePercent = ticker.todaysChangePerc || 0;
 
-              indexData.push({
-                symbol: indexInfo.displaySymbol,
-                name: indexInfo.name,
-                price: currentPrice,
-                change: change,
-                changePercent: changePercent
-              });
-            }
-          });
-        }
-
-        setMarketIndexes(indexData);
+            indexData.push({
+              symbol: indexInfo.displaySymbol,
+              name: indexInfo.name,
+              price: currentPrice,
+              change: change,
+              changePercent: changePercent
+            });
+          }
+        });
       }
+
+      // Process Bitcoin
+      if (bitcoinResult && bitcoinResult.bitcoin) {
+        const btcPrice = bitcoinResult.bitcoin.usd || 0;
+        const btcChangePercent = bitcoinResult.bitcoin.usd_24h_change || 0;
+        const btcChange = (btcPrice * btcChangePercent) / 100;
+
+        indexData.push({
+          symbol: 'BTC',
+          name: 'Bitcoin',
+          price: btcPrice,
+          change: btcChange,
+          changePercent: btcChangePercent
+        });
+      }
+
+      setMarketIndexes(indexData);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Error fetching market indexes:', error);
@@ -1220,7 +1240,7 @@ const InvestmentTracker: React.FC = () => {
         {marketIndexes.length > 0 && (
           <div className="glass rounded-xl p-6 mb-8">
             <h3 className="text-sm text-slate-400 uppercase tracking-wider mb-4 font-mono">Market Indexes</h3>
-            <div className="flex flex-col md:grid md:grid-cols-3 gap-6 md:gap-8">
+            <div className="flex flex-col md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
               {marketIndexes.map(index => (
                 <div key={index.symbol} className="grid grid-cols-[auto_1fr] gap-4 items-center">
                   <div className="flex-shrink-0">
@@ -1228,7 +1248,7 @@ const InvestmentTracker: React.FC = () => {
                     <div className="text-xs text-slate-500 font-mono">{index.symbol}</div>
                   </div>
                   <div className="flex-shrink-0">
-                    <div className="text-2xl font-bold text-blue-400">
+                    <div className={`text-2xl font-bold ${index.symbol === 'BTC' ? 'text-orange-400' : 'text-blue-400'}`}>
                       {index.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                     <div className={`text-sm font-semibold ${index.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
