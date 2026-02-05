@@ -112,7 +112,9 @@ const InvestmentTracker: React.FC = () => {
                 stock.name = tickerData.results.name; // Update local copy
               }
             } catch (err) {
-              console.error(`Error updating name for ${stock.symbol}:`, err);
+              if (import.meta.env.DEV) {
+                console.error(`Error updating name for ${stock.symbol}:`, err);
+              }
             }
           }
         }
@@ -128,8 +130,10 @@ const InvestmentTracker: React.FC = () => {
         setPortfolio([]);
       }
     } catch (error) {
-      console.error('Error loading portfolio:', error);
-      alert('Error loading portfolio: ' + (error as Error).message);
+      if (import.meta.env.DEV) {
+        console.error('Error loading portfolio:', error);
+      }
+      alert('Error loading portfolio. Please refresh and try again.');
     }
   };
 
@@ -174,7 +178,9 @@ const InvestmentTracker: React.FC = () => {
         setMarketIndexes(indexData);
       }
     } catch (error) {
-      console.error('Error fetching market indexes:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching market indexes:', error);
+      }
     }
   };
 
@@ -248,7 +254,9 @@ const InvestmentTracker: React.FC = () => {
       const fromDate = oneYearAgo.toISOString().split('T')[0];
 
       if (rateLimited) {
-        console.error('Rate limited - please wait before refreshing');
+        if (import.meta.env.DEV) {
+          console.error('Rate limited - please wait before refreshing');
+        }
         portfolio.forEach(stock => {
           data[stock.symbol] = {
             currentPrice: stock.avgPrice,
@@ -325,7 +333,9 @@ const InvestmentTracker: React.FC = () => {
                 avgVolume = Math.round(totalVolume / aggResult.results.length);
               }
           } catch (error) {
-            console.error(`Error fetching 52-week data for ${symbol}:`, error);
+            if (import.meta.env.DEV) {
+              console.error(`Error fetching 52-week data for ${symbol}:`, error);
+            }
           }
 
           // Fetch financial data (income statement for revenue & margins)
@@ -385,7 +395,9 @@ const InvestmentTracker: React.FC = () => {
                 }
               }
           } catch (error) {
-            console.error(`Error fetching financials for ${symbol}:`, error);
+            if (import.meta.env.DEV) {
+              console.error(`Error fetching financials for ${symbol}:`, error);
+            }
           }
 
           // Technical analysis from historical prices
@@ -566,7 +578,9 @@ const InvestmentTracker: React.FC = () => {
       });
 
     } catch (error) {
-      console.error('Error fetching stock data:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching stock data:', error);
+      }
       portfolio.forEach(stock => {
         data[stock.symbol] = {
           currentPrice: stock.avgPrice,
@@ -628,7 +642,9 @@ const InvestmentTracker: React.FC = () => {
             companyName = tickerData.results.name;
           }
         } catch (err) {
-          console.error('Error fetching company name:', err);
+          if (import.meta.env.DEV) {
+            console.error('Error fetching company name:', err);
+          }
           // If API call fails, just use symbol as name
         }
 
@@ -648,7 +664,9 @@ const InvestmentTracker: React.FC = () => {
         await loadPortfolio();
         setNewStock({ symbol: '', shares: '', avgPrice: '' });
       } catch (error) {
-        console.error('Error adding stock:', error);
+        if (import.meta.env.DEV) {
+          console.error('Error adding stock:', error);
+        }
         alert('Failed to add stock. Please try again.');
       }
     }
@@ -666,8 +684,10 @@ const InvestmentTracker: React.FC = () => {
 
       await loadPortfolio();
     } catch (error) {
-      console.error('Error removing stock:', error);
-      alert('Error removing stock: ' + (error as Error).message);
+      if (import.meta.env.DEV) {
+        console.error('Error removing stock:', error);
+      }
+      alert('Failed to remove stock. Please try again.');
     }
   };
 
@@ -723,7 +743,9 @@ const InvestmentTracker: React.FC = () => {
         await loadPortfolio();
         cancelEdit();
       } catch (error) {
-        console.error('Error updating stock:', error);
+        if (import.meta.env.DEV) {
+          console.error('Error updating stock:', error);
+        }
         alert('Failed to update stock. Please try again.');
       }
     }
@@ -914,7 +936,9 @@ const InvestmentTracker: React.FC = () => {
         }
       setChartLoading(false);
     } catch (error) {
-      console.error('Error fetching chart data:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching chart data:', error);
+      }
       setChartLoading(false);
     }
   };
@@ -995,15 +1019,8 @@ const InvestmentTracker: React.FC = () => {
         // Add 200-day SMA (purple line)
         if (chartData.length >= 200) {
           const sma200 = calculateSMA(chartData, 200);
-          console.log('Total chart data points:', chartData.length);
-          console.log('Chart display date:', chartDisplayDate);
-          console.log('First candlestick date:', visibleCandleData[0]?.time);
-          console.log('200 SMA first date:', sma200[0]?.time);
-          console.log('200 SMA last date:', sma200[sma200.length - 1]?.time);
           // Filter SMA to only show data points that are >= the display date
           const visibleSma200 = sma200.filter(point => point.time >= chartDisplayDate);
-          console.log('Visible 200 SMA points:', visibleSma200.length);
-          console.log('Visible 200 SMA first date:', visibleSma200[0]?.time);
           const sma200Series = chart.addLineSeries({
             color: '#a855f7',
             lineWidth: 2,
