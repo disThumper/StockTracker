@@ -1,159 +1,249 @@
-# StockTracker
+# StockTracker - Investment Portfolio Tracker
 
-A real-time investment portfolio tracker built with React, Supabase, and Polygon.io API.
+A modern React/TypeScript application for tracking your investment portfolio with real-time stock data, technical analysis, and performance metrics.
 
 ## Features
 
-- Track multiple stock investments with real-time pricing
-- Portfolio performance analytics and charts
-- Historical data visualization with TradingView charts
-- Secure authentication with Supabase
-- Real-time price updates from Polygon.io
+- **Portfolio Management**: Track multiple stocks with cost basis and share counts
+- **Real-time Data**: Live stock prices via Polygon.io API
+- **Market Indexes**: Monitor Dow Jones, S&P 500, and NASDAQ
+- **Technical Analysis**: RSI, moving averages, support/resistance levels
+- **Financial Metrics**: Revenue growth, margins, and fundamental data
+- **Interactive Charts**: Historical price charts with technical indicators
+- **AI Recommendations**: Buy/Sell/Hold signals based on technical and fundamental analysis
+- **User Authentication**: Secure login with Supabase Auth
+- **Cloud Database**: Portfolio data stored securely in Supabase
 
 ## Tech Stack
 
-- **Frontend:** React (via CDN), TailwindCSS
-- **Backend:** Supabase (PostgreSQL, Authentication, Real-time)
-- **Market Data:** Polygon.io API
-- **Charts:** Lightweight Charts library
-- **Hosting:** Netlify
+- **Frontend**: React 19 + TypeScript
+- **Build Tool**: Vite 7
+- **Styling**: Tailwind CSS 4
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Charts**: Lightweight Charts
+- **API**: Polygon.io for stock market data
 
-## Getting Started
+## Setup
 
 ### Prerequisites
 
-- [Supabase account](https://supabase.com)
-- [Polygon.io API key](https://polygon.io) (free tier available)
-- [Netlify account](https://netlify.com) (for deployment)
+- Node.js (v18 or higher)
+- A Supabase account and project
+- A Polygon.io API key (free tier available)
 
-### Local Development
+### Installation
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/StockTracker.git
-   cd StockTracker
-   ```
-
-2. Copy the environment template:
-   ```bash
-   cp .env.example .env
-   ```
-
-3. Update `.env` with your credentials:
-   - `SUPABASE_URL` - From your Supabase project settings
-   - `SUPABASE_ANON_KEY` - From your Supabase project settings
-   - `POLYGON_API_KEY` - From your Polygon.io dashboard
-
-4. Open `index.html` in your browser or use a local server:
-   ```bash
-   # Using Python
-   python -m http.server 8000
-
-   # Using Node.js
-   npx http-server
-   ```
-
-5. Navigate to `http://localhost:8000`
-
-## Deployment to Netlify
-
-### Automated Deployment (Recommended)
-
-1. **Connect to Netlify:**
-   - Log in to [Netlify](https://app.netlify.com)
-   - Click "Add new site" → "Import an existing project"
-   - Connect your GitHub account
-   - Select the `StockTracker` repository
-
-2. **Configure build settings:**
-   - Build command: (leave empty)
-   - Publish directory: `.` (root directory)
-
-3. **Set environment variables in Netlify:**
-   - Go to Site settings → Environment variables
-   - Add the following variables:
-     - `SUPABASE_URL`
-     - `SUPABASE_ANON_KEY`
-     - `POLYGON_API_KEY`
-
-4. **Deploy:**
-   - Click "Deploy site"
-   - Netlify will automatically deploy on every push to `main`
-
-### Manual Deployment
-
-You can also drag and drop the project folder directly into Netlify.
-
-## Supabase Setup
-
-### Database Schema
-
-Create the following tables in your Supabase project:
-
-```sql
--- Investments table
-CREATE TABLE investments (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  symbol TEXT NOT NULL,
-  quantity DECIMAL NOT NULL,
-  purchase_price DECIMAL NOT NULL,
-  purchase_date TIMESTAMP WITH TIME ZONE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Enable Row Level Security
-ALTER TABLE investments ENABLE ROW LEVEL SECURITY;
-
--- Create policies
-CREATE POLICY "Users can view their own investments"
-  ON investments FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own investments"
-  ON investments FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own investments"
-  ON investments FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own investments"
-  ON investments FOR DELETE
-  USING (auth.uid() = user_id);
+```bash
+git clone <your-repo-url>
+cd StockTracker
 ```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Configure environment variables:
+   - Copy `.env.example` to `.env`
+   - Fill in your credentials:
+     - `VITE_SUPABASE_URL`: Your Supabase project URL
+     - `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+     - `VITE_POLYGON_API_KEY`: Your Polygon.io API key
+
+4. Set up Supabase database:
+   - Create a `portfolios` table with the following schema:
+   ```sql
+   CREATE TABLE portfolios (
+     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+     user_id UUID REFERENCES auth.users(id) NOT NULL,
+     symbol TEXT NOT NULL,
+     shares DECIMAL NOT NULL,
+     avg_price DECIMAL NOT NULL,
+     name TEXT,
+     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+   );
+
+   -- Add RLS policies
+   ALTER TABLE portfolios ENABLE ROW LEVEL SECURITY;
+
+   CREATE POLICY "Users can view their own portfolios"
+     ON portfolios FOR SELECT
+     USING (auth.uid() = user_id);
+
+   CREATE POLICY "Users can insert their own portfolios"
+     ON portfolios FOR INSERT
+     WITH CHECK (auth.uid() = user_id);
+
+   CREATE POLICY "Users can update their own portfolios"
+     ON portfolios FOR UPDATE
+     USING (auth.uid() = user_id);
+
+   CREATE POLICY "Users can delete their own portfolios"
+     ON portfolios FOR DELETE
+     USING (auth.uid() = user_id);
+   ```
+
+### Development
+
+Start the development server:
+```bash
+npm run dev
+```
+
+The app will be available at `http://localhost:3000`
+
+### Production Build
+
+Build for production:
+```bash
+npm run build
+```
+
+Preview the production build:
+```bash
+npm run preview
+```
+
+## Deployment
+
+### Deploy to Netlify
+
+#### Option 1: Connect GitHub Repository (Recommended)
+
+1. **Push to GitHub**:
+   ```bash
+   git add .
+   git commit -m "Migration to React/Vite complete"
+   git push origin main
+   ```
+
+2. **Connect to Netlify**:
+   - Go to [Netlify](https://app.netlify.com)
+   - Click "Add new site" → "Import an existing project"
+   - Choose "Deploy with GitHub"
+   - Select your repository
+   - Netlify will auto-detect the settings from `netlify.toml`
+
+3. **Configure Environment Variables**:
+   - In Netlify dashboard, go to: Site settings → Environment variables
+   - Add the following variables:
+     - `VITE_SUPABASE_URL` = your Supabase URL
+     - `VITE_SUPABASE_ANON_KEY` = your Supabase anon key
+     - `VITE_POLYGON_API_KEY` = your Polygon.io API key
+
+4. **Deploy**:
+   - Click "Deploy site"
+   - Netlify will automatically build and deploy
+   - Future pushes to `main` branch will auto-deploy
+
+#### Option 2: Netlify CLI
+
+```bash
+# Install Netlify CLI
+npm install -g netlify-cli
+
+# Login to Netlify
+netlify login
+
+# Build and deploy
+npm run build
+netlify deploy --prod
+```
+
+#### Build Configuration
+
+The `netlify.toml` file is pre-configured with:
+- Build command: `npm run build`
+- Publish directory: `dist`
+- Node.js version: 18
+- SPA redirect rules
+- Security headers
+- Asset caching
 
 ## Project Structure
 
 ```
-StockTracker/
-├── index.html              # Main application (React component)
-├── supabase-config.js      # Supabase configuration (not used currently)
-├── package.json            # Node dependencies
-├── .env.example            # Environment variables template
-├── .gitignore              # Git ignore rules
-├── netlify.toml            # Netlify deployment configuration
-└── README.md               # This file
+src/
+├── components/
+│   └── Icons.tsx          # SVG icon components
+├── lib/
+│   ├── api.ts            # API configuration (Polygon.io)
+│   └── supabase.ts       # Supabase client setup
+├── types/
+│   └── index.ts          # TypeScript type definitions
+├── App.tsx               # Main application component
+├── main.tsx              # Application entry point
+├── index.css             # Global styles (Tailwind)
+└── vite-env.d.ts         # Vite environment type definitions
 ```
 
-## Roadmap
+## Environment Variables
 
-- [ ] Migrate to React + Vite for better performance and development experience
-- [ ] Add TypeScript support
-- [ ] Implement server-side API key protection with Netlify Edge Functions
-- [ ] Add portfolio analytics and reporting features
-- [ ] Support for multiple asset types (crypto, bonds, etc.)
+All environment variables must be prefixed with `VITE_` to be accessible in the browser:
 
-## Security Notes
+- `VITE_SUPABASE_URL`: Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous/public key
+- `VITE_POLYGON_API_KEY`: Your Polygon.io API key
 
-⚠️ **Current Version:** API keys are embedded in the HTML file. This is acceptable for demo purposes with Supabase's Row Level Security, but not recommended for production.
+**Security Notes:**
+- Never commit `.env` file to version control
+- The Supabase anon key is safe to expose (protected by RLS policies)
+- Use Row Level Security (RLS) policies in Supabase for data protection
+- Rotate API keys if they are accidentally exposed
 
-🔒 **Coming Soon:** After migration to React/Vite, API keys will be properly secured using environment variables and server-side functions.
+## Migration Notes
+
+This project was migrated from a single-file HTML/React application to a modern React/TypeScript/Vite setup.
+
+### Key Improvements:
+
+1. **Better Performance**
+   - Vite's fast HMR (Hot Module Replacement)
+   - Optimized production builds with code splitting
+   - ES modules for faster development
+
+2. **Environment Variable Security**
+   - API keys moved from source code to `.env` file
+   - `.env` excluded from version control
+   - `.env.example` template for other developers
+
+3. **Modern Development Workflow**
+   - TypeScript for type safety
+   - Component-based architecture
+   - Modular file structure
+   - Better developer experience with Vite
+
+4. **TypeScript Support**
+   - Full type safety across the application
+   - Better IDE autocomplete and error detection
+   - Improved code maintainability
+
+### Breaking Changes:
+
+None - all functionality from the original application has been preserved.
+
+### Legacy Files:
+
+The old HTML-based files have been preserved:
+- `index-OLD.html` - Original single-file app
+- `index-OLD-2.html` - Pre-migration backup
+- `supabase-config.js` - Old config file (no longer used)
+
+## API Rate Limits
+
+- **Polygon.io Free Tier**: 5 API calls per minute
+- The app caches stock data and refreshes every 5 minutes
+- Market indexes and portfolio data are fetched separately to optimize API usage
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
 ## License
 
